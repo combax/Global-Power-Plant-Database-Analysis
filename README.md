@@ -2,7 +2,7 @@
   <center><h1>EDA of Global Power Plants Database using Mircosoft PowerBI</h1></center>
 </div>
 
-<p align="center"><img src="/Images/powerBi.png" alt="Icon Description" width="100"></p>
+<p align="center"><img src="/Images/PowerBi.png" alt="Icon Description" width="100"></p>
 
 ## Dataset
 
@@ -17,7 +17,7 @@ It was updated last on **June 24, 2021**.
 <div align="center">
  <h2>Which country is the greenest?
     <p align="center">
-        <img src="/Images/leaf.png" alt="Icon Description" width="50">
+        <img src="/Images/leaf.png" alt="leaf" width="50">
     </p>
 </div>
 
@@ -70,7 +70,7 @@ Finally we have this beautiful visual to represent it:
 <div align="center">
  <h2>Which is the most efficient fuel throughtout the years?
     <p align="center">
-        <img src="/Images/fuel.png" alt="Fuel icon" width="50">
+        <img src="/Images/Fuel.png" alt="Fuel icon" width="50">
     </p>
 </div>
 
@@ -171,3 +171,5 @@ Visual:
 ---
 
 All the files including the main PowerBI file (**Global_powerplants.pbix**) and included here. Images and icons are in Images folder.
+
+---

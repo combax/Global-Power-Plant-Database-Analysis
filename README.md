@@ -4,6 +4,11 @@
 
 <p align="center"><img src="/Images/PowerBi.png" alt="Icon Description" width="100"></p>
 
+This project finds:
+- Which countries are the greenest?
+- What is the most efficient fuel for energy production?
+- Which fuel type have suspiciously high amounts of missing data?
+
 ## Dataset
 
 **Global Power Plant Database** is a comprehensive, global, open source data base of power plants available [here](https://datasets.wri.org/dataset/globalpowerplantdatabase).

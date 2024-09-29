@@ -170,7 +170,7 @@ ORDER BY fuel_efficiency DESC;
  
 Visual:
 
-![Efficiency](/Images/Efficient.png)
+![Efficiency](/Images/Efficient1.png)
 
 ---
 
@@ -210,7 +210,7 @@ GROUP BY primary_fuel;
 
 Visual:
 
-![Missing](/Images/missing.png)
+![Missing](/Images/missing1.png)
 
 ---
 

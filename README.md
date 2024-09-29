@@ -1,13 +1,14 @@
 <div align="center">
-  <center><h1>EDA of Global Power Plants Database using Mircosoft PowerBI</h1></center>
+  <center><h1>Global Power Plants Database EDA</h1></center>
 </div>
 
-<p align="center"><img src="/Images/PowerBi.png" alt="Icon Description" width="100"></p>
+This project:
+- Uses ***MySQL to explore and calculate different metrics*** from dataset.
+- Plot Important metrics in ***PowerBI after connecting it to MySQL server.***
 
-This project finds:
-- Which countries are the greenest?
-- What is the most efficient fuel for energy production?
-- Which fuel type have suspiciously high amounts of missing data?
+All the files including the main PowerBI file (**Global_powerplants.pbix**) and main SQL file(**SQL_queries.sql**) are here. Images are in the Images folder.
+
+---
 
 ## Dataset
 
@@ -16,6 +17,54 @@ This project finds:
 Data covers **167 countries** and includes **thermal plants** for example coal, gas, oil, nuclear, biomass, waste and geothermal, **renewables** like solar, hydro, and wind. Geolocation of each power plant, generation, capacity, ownership, and fuel types along with secondary, and tertiary fuel types are also provided.
 
 It was updated last on **June 24, 2021**.
+
+- Database creation query:
+```sql
+
+-- Creating database
+CREATE DATABASE power_plant;
+
+-- Creating TABLE
+CREATE TABLE energy (
+    country TEXT NOT NULL,  -- 3 character ISO 3166-1 alpha-3 country code
+    country_long TEXT NOT NULL,  -- longer form of country designation
+    name TEXT NOT NULL,  -- name of the power plant
+    gppd_idnr TEXT NOT NULL,  -- 10 or 12 character identifier for the power plant
+    capacity_mw FLOAT,  -- electrical generating capacity in megawatts
+    latitude DECIMAL(10,7),  -- geolocation (latitude) in decimal degrees (WGS84)
+    longitude DECIMAL(10,7),  -- geolocation (longitude) in decimal degrees (WGS84)
+    primary_fuel TEXT,  -- energy source for primary electricity generation
+    other_fuel1 TEXT,  -- secondary energy source
+    other_fuel2 TEXT,  -- tertiary energy source
+    other_fuel3 TEXT,  -- quaternary energy source
+    commissioning_year INT,  -- year of plant operation
+    owner VARCHAR(256),  -- majority shareholder of the plant
+    source VARCHAR(128),  -- entity reporting the data
+    url TEXT,  -- web document related to the source
+    geolocation_source TEXT,  -- attribution for geolocation information
+    wepp_id VARCHAR(64),  -- reference to unique plant identifier in PLATTS-WEPP
+    year_of_capacity_data INT,  -- year the capacity information was reported
+    generation_gwh_2013 FLOAT,  -- generation data for 2013
+    generation_gwh_2014 FLOAT,  -- generation data for 2014
+    generation_gwh_2015 FLOAT,  -- generation data for 2015
+    generation_gwh_2016 FLOAT,  -- generation data for 2016
+    generation_gwh_2017 FLOAT,  -- generation data for 2017
+    generation_gwh_2018 FLOAT,  -- generation data for 2018
+    generation_gwh_2019 FLOAT,  -- generation data for 2019
+    generation_data_source TEXT,  -- source for the reported generation information
+    estimated_generation_gwh_2013 FLOAT,  -- estimated generation data for 2013
+    estimated_generation_gwh_2014 FLOAT,  -- estimated generation data for 2014
+    estimated_generation_gwh_2015 FLOAT,  -- estimated generation data for 2015
+    estimated_generation_gwh_2016 FLOAT,  -- estimated generation data for 2016
+    estimated_generation_gwh_2017 FLOAT,  -- estimated generation data for 2017
+    estimated_generation_note_2013 TEXT,  -- model/method label for 2013 estimated generation
+    estimated_generation_note_2014 TEXT,  -- model/method label for 2014 estimated generation
+    estimated_generation_note_2015 TEXT,  -- model/method label for 2015 estimated generation
+    estimated_generation_note_2016 TEXT,  -- model/method label for 2016 estimated generation
+    estimated_generation_note_2017 TEXT  -- model/method label for 2017 estimated generation
+);
+
+```
 
 ---
 
@@ -28,43 +77,65 @@ It was updated last on **June 24, 2021**.
 
 - Calculation of difference between energy produced by Renewable Sources to Non Renewable sources by all plants of the country is the determining factor here.
 
-- But all **energy generation** columns have **67%** and all **estimated generation** column have **5.14%** empty rows. So we use **capacity** column which has **0 empty rows**.
+- But all **energy generation** columns have **67%** and all **estimated generation** column have **5.14%** empty rows. So we use **capacity** column which has **0 empty rows**:
 
-- By using the capacity column we can see if the country has potential of producing more green energy.
+```sql
+SELECT COUNT(*) -- Entire empty rows Generated
+FROM energy
+WHERE generation_gwh_2013 IS NULL
+AND generation_gwh_2014 IS NULL
+AND generation_gwh_2015 IS NULL
+AND generation_gwh_2016 IS NULL
+AND generation_gwh_2017 IS NULL
+AND generation_gwh_2018 IS NULL
+AND generation_gwh_2019 IS NULL; -- 23546
 
-- First we calculate *RenewableCapacity* and *Non-RenewableCapcity* in **PowerBI Dax** using:
+SELECT COUNT(*) --total rows
+FROM energy; -- 34936
 
+-- 67.3975% 
+
+SELECT COUNT(*) -- Entire empty rows Estimated
+FROM energy
+WHERE estimated_generation_gwh_2013 IS NULL
+AND estimated_generation_gwh_2014 IS NULL
+AND estimated_generation_gwh_2015 IS NULL
+AND estimated_generation_gwh_2016 IS NULL
+AND estimated_generation_gwh_2017 IS NULL; -- 1798
+
+-- 5.417%
 ```
-RenewableCapacity = CALCULATE(SUM('global_power_plant_database'[capacity_mw]), 'global_power_plant_database'[EnergySourceCategory] = "Renewable")
-```
+- We also tested how many individual empty columns do all **estimated_generation** columns have:
+    - This showed reduction in total number of missing rows over the years **reducing.**
 
-```
-Non-RenewableCapacity = CALCULATE(SUM('global_power_plant_database'[capacity_mw]), 'global_power_plant_database'[EnergySourceCategory] = "Non-Renewable")
-```
+- Also finding if Cogeneration(Using combination of fuels) and Other fuels come under Non-Renewable via their other_fuel1, other_fuel2, and other_fuel3.
 
-- And *CapacityDifference* using:
+- We subtract **capacity_mw** for Renewable to Non-Renewable resources for each country:
 
-```
-CapacityDifference = [RenewableCapacity] - [Non-RenewableCapacity]
+```sql
+CREATE TABLE country_capacity_balance AS -- Greneest country table
+SELECT 
+    country_long,
+    
+    -- Subtract Renewable from Non-Renewable
+    SUM(CASE 
+        WHEN primary_fuel NOT IN ('Hydro', 'Solar', 'Wind', 'Nuclear', 'Waste', 'Biomass', 'Wave and Tidal', 'Geothermal', 'Storage') 
+        THEN capacity_mw 
+        ELSE 0 
+    END)
+    -
+    SUM(CASE 
+        WHEN primary_fuel IN ('Hydro', 'Solar', 'Wind', 'Nuclear', 'Waste', 'Biomass', 'Wave and Tidal', 'Geothermal', 'Storage') 
+        THEN capacity_mw 
+        ELSE 0 
+    END) AS CapacityDifference
+FROM energy
+GROUP BY country_long
+ORDER BY CapacityDifference DESC;
 ```
 
 - Despite being the largest power producers, **USA & China rely heavily on non-renewable fuels.**
 
-- Creating **Pivot Table** of top 25 countries which have **largest energy production capacity**:
-
-```
-Top 25 Countries by Capacity = 
-TOPN(
-    25,
-    SUMMARIZE(
-        'global_power_plant_database',
-        'global_power_plant_database'[country_long],
-        "Total Capacity MW", CALCULATE(SUM('global_power_plant_database'[capacity_mw]))
-    ),
-    [Total Capacity MW], DESC
-)
-
-```
 
 Finally we have this beautiful visual to represent it:
 
@@ -83,15 +154,16 @@ Finally we have this beautiful visual to represent it:
 
 - **Efficiency of a fuel type** = \( \frac{\text{Addiction of capacities of all Power Plants using that fuel}}{\text{Total number of Plants using that fuel}} \)
 
-- Efficiency \% = \(\frac{\text{Efficiency of a fuel type}}{100}\)
-
-
-```
-Efficiency = 
-(CALCULATE(
-    SUM('global_power_plant_database'[capacity_mw]),
-    ALLEXCEPT('global_power_plant_database', 'global_power_plant_database'[primary_fuel])
-) / COUNT('global_power_plant_database'[gppd_idnr])) / 100
+```sql
+CREATE TABLE fuel_efficiency AS
+SELECT
+    primary_fuel,
+    SUM(capacity_mw) AS total_capacity,
+    COUNT(*) AS plant_count,
+    SUM(capacity_mw) / COUNT(*) AS fuel_efficiency
+FROM energy
+GROUP BY primary_fuel
+ORDER BY fuel_efficiency DESC;
 ```
 
 - **Nuclear** is the **most efficient** followed by Coal, Gas, Petcoke, etc. and **Solar, Waste, and Storage** are the **least efficient** fuels.
@@ -123,32 +195,17 @@ Visual:
 
 - Having **tremendous amounts of missing data from almost all major non-renewable sources** is certainly something odd.
 
-Formula used to calculate missing data% division for a year:
+Formula used to calculate missing data% division for a year, which is repeated for every year:
 
-```
-MissingData2013 = 
-COUNTROWS (
-    FILTER (
-        'global_power_plant_database',
-        'global_power_plant_database'[generation_gwh_2013] <> BLANK ()
-            && (
-                'global_power_plant_database'[primary_fuel] = "Biomass"
-                || 'global_power_plant_database'[primary_fuel] = "Coal"
-                || 'global_power_plant_database'[primary_fuel] = "Cogeneration"
-                || 'global_power_plant_database'[primary_fuel] = "Gas"
-                || 'global_power_plant_database'[primary_fuel] = "Geothermal"
-                || 'global_power_plant_database'[primary_fuel] = "Hydro"
-                || 'global_power_plant_database'[primary_fuel] = "Nuclear"
-                || 'global_power_plant_database'[primary_fuel] = "Oil"
-                || 'global_power_plant_database'[primary_fuel] = "Petcoke"
-                || 'global_power_plant_database'[primary_fuel] = "Solar"
-                || 'global_power_plant_database'[primary_fuel] = "Storage"
-                || 'global_power_plant_database'[primary_fuel] = "Waste"
-                || 'global_power_plant_database'[primary_fuel] = "Wave and Tidal"
-                || 'global_power_plant_database'[primary_fuel] = "Wind"
-            )
-    )
-)
+```sql
+CREATE TABLE missing_data_2013 AS
+SELECT 
+    2013 AS year,
+    primary_fuel,
+    COUNT(*) AS missing_count
+FROM energy
+WHERE generation_gwh_2013 IS NULL
+GROUP BY primary_fuel;
 ```
 
 Visual:
@@ -159,7 +216,7 @@ Visual:
 
 ## Final Dashboard in PowerBI
 
-![Final](/Images/Global_powerplants-1.png)
+![Final](/Images/final_dashboard.png)
 
 ---
 
@@ -175,6 +232,8 @@ Visual:
 
 ---
 
-All the files including the main PowerBI file (**Global_powerplants.pbix**) and included here. Images and icons are in Images folder.
+#### Why not publish PowerBI file?
 
----
+- PowerBI doesn't let you publish a file without logging in with a business account.
+- And Microsoft no longer let's you sign into their developer program to get a business e-mail.
+- In future if I purchase PowerBI subscription, I will make sure to provide a link at top for the dashboard.

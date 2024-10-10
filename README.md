@@ -210,13 +210,13 @@ GROUP BY primary_fuel;
 
 Visual:
 
-![Missing](/Images/missing1.png)
+![Missing](/Images/missing2.png)
 
 ---
 
 ## Final Dashboard in PowerBI
 
-![Final](/Images/final_dashboard.png)
+![Final](/Images/final_dashboard1.png)
 
 ---
 

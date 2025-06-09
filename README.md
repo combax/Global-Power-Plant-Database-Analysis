@@ -2,7 +2,7 @@
   <center><h1>Global Power Plants Database EDA</h1></center>
 </div>
 
-About this project:
+This project:
 - Uses ***MySQL to explore and calculate different metrics*** from dataset.
 - Plot Important metrics in ***PowerBI after connecting it to MySQL server.***
 
